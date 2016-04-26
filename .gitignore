@@ -45,3 +45,10 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+*.TMP
+*.o
+*.crf
+*.d
+Keil/Objects/Puncture.htm
+Keil/Objects/Puncture.sct
+Keil/Objects/Puncture.lnp
