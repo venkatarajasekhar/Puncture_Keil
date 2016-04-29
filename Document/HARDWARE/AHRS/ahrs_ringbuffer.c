@@ -79,9 +79,9 @@ void AHRSdataDecode_A(void)
 {
     if (AHRS_CheckSum(Rxbuff_A,10)==Rxbuff_A[10])
     {
-			Ax_A = stcAngle_A.Angle[0];
-			Ay_A = stcAngle_A.Angle[1];
-			Az_A = stcAngle_A.Angle[2];
+			Ax_A = (float)stcAngle_A.Angle[0];
+			Ay_A = (float)stcAngle_A.Angle[1];
+			Az_A = (float)stcAngle_A.Angle[2];    ///32768*16*9.8
 			//printf("Ax_A=%f, Ay_A=%f, Az_A=%f\r\n",Ax_A,Ay_A,Az_A);
 			
 //			Roll_A = (float)stcAngle_A.Angle[0]/32768*180;

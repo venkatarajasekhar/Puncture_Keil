@@ -78,9 +78,10 @@ int main(void)
   USB_PORT_SET(ENABLE);	
 
 /**************************************************************/	
-	printf(" Skywalker is started..\r\n");
+	//printf(" Skywalker is started..\r\n");
 	while(1)
   {   
+		printf(" Skywalker is started..\r\n");
 		//Get_AHRS_Value();
 		Get_Percussion_Flag();
 		

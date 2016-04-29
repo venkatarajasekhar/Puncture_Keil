@@ -9,17 +9,20 @@ SENSOR_DATA_TypeDef axis_data[5] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
 
 //
 SENSOR_DATA_TypeDef THRESH					= {35,225,225};						//¾ùÖµ
-SENSOR_DATA_TypeDef MAX_DATA 				= {-5000,-5000,-5000};		//
-SENSOR_DATA_TypeDef MIN_DATA 				= {5000,5000,5000};
+SENSOR_DATA_TypeDef MAX_DATA 				= {-20000,-20000,-20000};		//
+SENSOR_DATA_TypeDef MIN_DATA 				= {20000,20000,20000};
 SENSOR_DATA_TypeDef DELTA 					= {5000,5000,5000};
 SENSOR_DATA_TypeDef RES             = {5000,5000,5000};
 SENSOR_DATA_TypeDef LAST_SAMPLE 		= {0,0,0};
 SENSOR_DATA_TypeDef CURR_SAMPLE 		= {0,0,0};	
-SENSOR_DATA_TypeDef AVERAGE_DATA[4] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
+SENSOR_DATA_TypeDef AVERAGE_DATA[5] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
 
 SENSOR_DATA_TypeDef data_tmp				= {0,0,0};
 
 SENSOR_DATA_TypeDef QUICKSORT_DATA[5]  = {{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
+
+uint16_t just_look   =   0;
+
 
 #define max(a,b) ((a)>(b)?(a):(b))
 
@@ -107,17 +110,23 @@ SENSOR_DATA_TypeDef MPU6050_DEVIDE(SENSOR_DATA_TypeDef data0, SENSOR_DATA_TypeDe
  *****************************************************************************/
 SENSOR_DATA_TypeDef MPU6050_AVERAGE(SENSOR_DATA_TypeDef *data, uint32_t len)
 {
-	SENSOR_DATA_TypeDef result;
-	uint32_t i;
+//	SENSOR_DATA_TypeDef result;
+	SENSOR_DATA_TypeDef result = {0};
+	uint8_t i;
 	for(i=0;i<len;i++)
 	{
 		result.X += data[i].X;
 		result.Y += data[i].Y;
 		result.Z += data[i].Z;
 	}
-	result.X /= len;
-	result.Y /= len;
-	result.Z /= len;
+//	result.X /= len;
+//	result.Y /= len;
+//	result.Z /= len;
+
+	result.X = result.X / 5;
+	result.Y = result.Y / 5;
+	result.Z = result.Z / 5;
+	
 	return result;
 }
 
@@ -136,33 +145,30 @@ int MPU6050_IS_NULL(SENSOR_DATA_TypeDef data)
 
 
 /*****Quick Sort************/
-int Partition(SENSOR_DATA_TypeDef *a,int low,int high)
+int Partition(short *a,int low,int high)
 {
-	int pivotkey = a[low].Z;
+	int pivotkey = a[low];
 	while(low<high)
 	{
-		if(low<high && a[high].Z>=pivotkey) --high;
-		a[low].Z = a[high].Z;
-		if(low<high && a[low].Z<=pivotkey) ++low;
-		a[high].Z = a[low].Z;
+		if(low<high && a[high]>=pivotkey) --high;
+		a[low] = a[high];
+		if(low<high && a[low]<=pivotkey) ++low;
+		a[high] = a[low];
 	}
-	a[low].Z = pivotkey;
+	a[low] = pivotkey;
 	return low;
 }
 
-SENSOR_DATA_TypeDef Quick_Sort(SENSOR_DATA_TypeDef *a,int low,int high)
+short Quick_Sort(short *a,int low,int high)
 {
-	uint8_t i = 0;
-	SENSOR_DATA_TypeDef result;
+	short result;
 	if(low<high)
 	{
 		int position = Partition(a,low,high);
 		Quick_Sort(a,low,position-1);
 		Quick_Sort(a,position+1,high);
 	}
-	result = a[low];
-	for(i=0;i<5;i++)
-		QUICKSORT_DATA[i] = a[i];
+	result = a[low+1];
 	
 	return result;
 }
@@ -172,7 +178,7 @@ SENSOR_DATA_TypeDef Quick_Sort(SENSOR_DATA_TypeDef *a,int low,int high)
 
 /**************************************************************************//**
  * @brief
- * Read full FIFO of ADXL345 sensor, average over 4 consecutive data points
+ * Read full FIFO of MPU6050 sensor, average over 4 consecutive data points
  *****************************************************************************/
 void MPU6050_READ_FIFO(SENSOR_DATA_TypeDef *axis_converted_avg)
 {
@@ -183,12 +189,12 @@ void MPU6050_READ_FIFO(SENSOR_DATA_TypeDef *axis_converted_avg)
    uint8_t res_div = 5;
    
    //reinit MAX and MIN value for each FIFO read
-   MAX_DATA.X = -5000;
-   MAX_DATA.Y = -5000;
-   MAX_DATA.Z = -5000;
-   MIN_DATA.X = 5000;
-   MIN_DATA.Y = 5000;
-   MIN_DATA.Z = 5000;
+   MAX_DATA.X = -20000;
+   MAX_DATA.Y = -20000;
+   MAX_DATA.Z = -20000;
+   MIN_DATA.X = 20000;
+   MIN_DATA.Y = 20000;
+   MIN_DATA.Z = 20000;
    //check if this is the very first data collection
    if(MPU6050_IS_NULL(AVERAGE_DATA[0]) && MPU6050_IS_NULL(AVERAGE_DATA[1]) && MPU6050_IS_NULL(AVERAGE_DATA[2]))
    {
@@ -206,13 +212,15 @@ void MPU6050_READ_FIFO(SENSOR_DATA_TypeDef *axis_converted_avg)
 			AVERAGE_DATA[1] = data_tmp;
 			AVERAGE_DATA[2] = data_tmp;
 			AVERAGE_DATA[3] = data_tmp;
+			AVERAGE_DATA[4] = data_tmp;
 		}
 		//average process
+		AVERAGE_DATA[4] = AVERAGE_DATA[3];
 		AVERAGE_DATA[3] = AVERAGE_DATA[2];
 		AVERAGE_DATA[2] = AVERAGE_DATA[1];
 		AVERAGE_DATA[1] = AVERAGE_DATA[0];
 		AVERAGE_DATA[0] = data_tmp;
-	  axis_converted_avg[i] = MPU6050_AVERAGE(AVERAGE_DATA,4);
+	  axis_converted_avg[i] = MPU6050_AVERAGE(AVERAGE_DATA,5);
 		//find maximum and minimum value of 3 axis
 		if(MAX_DATA.X<axis_converted_avg[i].X)  MAX_DATA.X=axis_converted_avg[i].X;
 		if(MAX_DATA.Y<axis_converted_avg[i].Y)  MAX_DATA.Y=axis_converted_avg[i].Y;
@@ -223,14 +231,15 @@ void MPU6050_READ_FIFO(SENSOR_DATA_TypeDef *axis_converted_avg)
 	}	
 	//printf("axis_converted_avg : %d , %d , %d , %d , %d \r\n",axis_converted_avg[0].Z,axis_converted_avg[1].Z,axis_converted_avg[2].Z,axis_converted_avg[3].Z,axis_converted_avg[4].Z);
 	//Calculate resolution for step counting 
-	//THRESH = MPU6050_AVERAGE(axis_converted_avg,5);
-	THRESH = Quick_Sort(axis_converted_avg,0,4);
-	//printf("QuickSort : %d , %d , %d , %d , %d \r\n",axis_converted_avg[0].Z,axis_converted_avg[1].Z,axis_converted_avg[2].Z,axis_converted_avg[3].Z,axis_converted_avg[4].Z);
+	THRESH = MPU6050_AVERAGE(axis_converted_avg,5);
+	//THRESH.X = Quick_Sort((*axis_converted_avg).X,0,4);
 	DELTA =  MPU6050_MINUS(MAX_DATA,MIN_DATA);
-	RES.X = max(MAX_DATA.X-THRESH.X, THRESH.X-MIN_DATA.X)/res_div;
-	RES.Y = max(MAX_DATA.Y-THRESH.Y, THRESH.Y-MIN_DATA.Y)/res_div;
-	//RES.Z = max(MAX_DATA.Z-THRESH.Z, THRESH.Z-MIN_DATA.Z)/res_div;
-	RES.Z = 1000;
+//	RES.X = max(MAX_DATA.X-THRESH.X, THRESH.X-MIN_DATA.X)/res_div;
+//	RES.Y = max(MAX_DATA.Y-THRESH.Y, THRESH.Y-MIN_DATA.Y)/res_div;
+//	RES.Z = max(MAX_DATA.Z-THRESH.Z, THRESH.Z-MIN_DATA.Z)/res_div;
+	RES.X = 100;
+	RES.Y = 100;
+	RES.Z = 50;
 }
 
 
@@ -244,9 +253,9 @@ int MPU6050_Acc_Detect(SENSOR_DATA_TypeDef NEW_SAMPLE)
 	//@TODO add time window and step model rule 
 	if(abs(DELTA.X)>=abs(DELTA.Y) && abs(DELTA.X)>=abs(DELTA.Z) )
 	{
-		if((LAST_SAMPLE.X-THRESH.X>RES.X) && (CURR_SAMPLE.X-THRESH.X<-RES.X))
+		if((abs(LAST_SAMPLE.X-THRESH.X)>RES.X) && (abs(CURR_SAMPLE.X-THRESH.X)>RES.X))
 		{
-			flag = 0;
+			flag = 1;
 			LAST_SAMPLE = CURR_SAMPLE;
 		}	
 		else
@@ -259,9 +268,9 @@ int MPU6050_Acc_Detect(SENSOR_DATA_TypeDef NEW_SAMPLE)
 	
 	else if(abs(DELTA.Y)>=abs(DELTA.X) && abs(DELTA.Y)>=abs(DELTA.Z) )
 	{
-		if((LAST_SAMPLE.Y-THRESH.Y>RES.Y) && (CURR_SAMPLE.Y-THRESH.Y<-RES.Y))
+		if((abs(LAST_SAMPLE.Y-THRESH.Y)>RES.Y) && (abs(CURR_SAMPLE.Y-THRESH.Y)>RES.Y))
 		{
-			flag = 0;
+			flag = 1;
 			LAST_SAMPLE = CURR_SAMPLE;
 		}	
 		else
@@ -274,12 +283,10 @@ int MPU6050_Acc_Detect(SENSOR_DATA_TypeDef NEW_SAMPLE)
 	
 	else if(abs(DELTA.Z)>=abs(DELTA.X) && abs(DELTA.Z)>=abs(DELTA.Y) )
 	{
-		//flag = 1;
 		if((abs(LAST_SAMPLE.Z-THRESH.Z)>RES.Z) && (abs(CURR_SAMPLE.Z-THRESH.Z)>RES.Z))
 		{
 			flag = 1;
 			LAST_SAMPLE = CURR_SAMPLE;
-			//CURR_SAMPLE = NEW_SAMPLE;
 		}	
 		else
 		{

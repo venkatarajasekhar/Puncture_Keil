@@ -10,9 +10,9 @@ extern float Ax_A, Ay_A, Az_A, Ax_B, Ay_B, Az_B, Ax_C, Ay_C, Az_C;
 
 typedef struct
 {
-	short X;
-	short Y;
-	short Z;
+	int16_t X;
+	int16_t Y;
+	int16_t Z;
 	
 }SENSOR_DATA_TypeDef;
 
@@ -29,8 +29,8 @@ int MPU6050_IS_NULL(SENSOR_DATA_TypeDef data);
 void MPU6050_READ_FIFO(SENSOR_DATA_TypeDef *axis_converted_avg);
 int MPU6050_Acc_Detect(SENSOR_DATA_TypeDef NEW_SAMPLE);
 void Get_Percussion_Flag(void);
-int Partition(SENSOR_DATA_TypeDef *a,int low,int high);
-SENSOR_DATA_TypeDef Quick_Sort(SENSOR_DATA_TypeDef *a,int low,int high);
+int Partition(short *a,int low,int high);
+short Quick_Sort(short *a,int low,int high);
 	
 
 
